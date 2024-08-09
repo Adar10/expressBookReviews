@@ -38,7 +38,7 @@ regd_users.post("/login", (req, res) => {
     }
   
     const token = jwt.sign({ username }, 'access', { expiresIn: 60 * 60 });
-    return res.status(200).json({ message: "Review deleted successfully" });
+    return res.status(200).json({ message: "Login successful" });
   });
   
 // Add a book review
@@ -52,7 +52,7 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
     }
     
     
-    if (review) {
+    if (rew) {
         
         book.reviews[0].review = review;
     } else {
@@ -65,9 +65,28 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 // Delete a book review
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-    
-        
+    const isbn = req.params.isbn;
+    const token = req.headers['Authorization'].split(' ')[1];
+
+    jwt.verify(token, 'access', (err, user) => {
+        if (err) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const username = user.username;
+        const book = books[isbn];
+
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        if (!book.reviews[username]) {
+            return res.status(404).json({ message: "Review not found" });
+        }
+
+        delete book.reviews[username];
+        res.json({ message: "Review deleted successfully", book });
     });
+});
 
 
 module.exports.authenticated = regd_users;
